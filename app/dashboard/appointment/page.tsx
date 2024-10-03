@@ -46,12 +46,9 @@ export default function Appointments() {
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="draft">Draft</TabsTrigger>
-          <TabsTrigger value="archived" className="hidden sm:flex">
-            Archived
-          </TabsTrigger>
+          <TabsTrigger value="completed">Completed</TabsTrigger>
         </TabsList>
-        <div className="ml-auto flex items-center gap-2">
+        {/* <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -83,7 +80,7 @@ export default function Appointments() {
               Add Product
             </span>
           </Button>
-        </div>
+        </div> */}
       </div>
       <TabsContent value="all">
         <Card x-chunk="dashboard-06-chunk-0">
@@ -106,42 +103,44 @@ export default function Appointments() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">John Doe</TableCell>
-                  <TableCell className="font-medium">Tango</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">Cat</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">Upcoming</Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    2023-07-12 10:42 AM
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {" "}
-                    2023-07-12 10:42 AM
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-haspopup="true"
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
+                <Link legacyBehavior href="/dashboard/appointment/123">
+                  <TableRow>
+                    <TableCell className="font-medium">John Doe</TableCell>
+                    <TableCell className="font-medium">Tango</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">Cat</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">Upcoming</Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      2023-07-12 10:42 AM
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {" "}
+                      2023-07-12 10:42 AM
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            aria-haspopup="true"
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem>Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                </Link>
               </TableBody>
             </Table>
           </CardContent>
