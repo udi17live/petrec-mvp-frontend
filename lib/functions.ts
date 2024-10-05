@@ -1,10 +1,3 @@
-// export function formatTime(seconds: number) {
-//   const mins = Math.floor(seconds / 60);
-//   const secs = seconds % 60;
-//   return `${mins.toString().padStart(2, "0")}:${secs
-//     .toString()
-//     .padStart(2, "0")}.${(seconds % 1).toFixed(2).slice(2)}`;
-// }
 
 export function formatTime(seconds: number) {
   const mins = Math.floor(seconds / 60);
@@ -14,4 +7,15 @@ export function formatTime(seconds: number) {
   return `${mins.toString().padStart(2, "0")}:${secs
     .toString()
     .padStart(2, "0")}.${millis.toString().padStart(2, "0")}`;
+}
+
+export function getLoginErrorMessage(error:string | null | undefined) {
+  if (error === null || error == undefined) {
+    return "Login Failed. Something went wrong"
+  }
+  if (error === 'CredentialsSignin') {
+    return "Invalid Credentials."
+  } else {
+    return "Login Failed. Something went wrong"
+  }
 }
