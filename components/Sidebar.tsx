@@ -1,15 +1,6 @@
 import Link from "next/link";
-import {
-  Bell,
-  Dog,
-  Home,
-  LineChart,
-  Package,
-  ShoppingCart,
-  Users,
-} from "lucide-react";
+import { Bell, Dog } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Navigation from "./Navigation";
 
