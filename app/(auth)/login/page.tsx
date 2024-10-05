@@ -41,6 +41,8 @@ export default function Login() {
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setIsLoading(true)
+        setIsError(false)
+        setIsSuccess(false)
         const formData = new FormData(event.currentTarget);
         const email = formData.get('email');
         const password = formData.get('password');
