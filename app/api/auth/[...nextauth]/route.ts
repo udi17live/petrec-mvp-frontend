@@ -1,5 +1,5 @@
 import { db } from '../../../../lib/db'
-import { compare } from 'bcrypt'
+import { compare } from 'bcryptjs'
 import NextAuth, { type NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 
@@ -53,17 +53,17 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     session: ({ session, token }) => {
-      console.log('Session Callback', { session, token })
+      // console.log('Session Callback', { session })
       return {
         ...session,
         user: {
+          id: token.id,
           ...session.user,
-          id: token.id
         }
       }
     },
     jwt: ({ token, user }) => {
-      console.log('JWT Callback', { token, user })
+      // console.log('JWT Callback', { token, user })
       if (user) {
         const u = user as unknown as any
         return {

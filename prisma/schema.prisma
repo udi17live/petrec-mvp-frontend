@@ -37,7 +37,6 @@ model Appointment {
   id Int @id @default(autoincrement())
   scribeHash String @default(uuid()) @db.VarChar(255) @unique
   clientName String @db.VarChar(400)
-  petName String @db.VarChar(200)
   clientEmail String @db.VarChar(200)
   doctorId Int 
   doctor User @relation(fields:[doctorId], references: [id])
@@ -84,6 +83,7 @@ enum AppointmentStatus {
 enum AppointmentDataProcessingStatus {
   COMPLETED
   PENDING
+  QUEUED
   ERROR
 }
 
