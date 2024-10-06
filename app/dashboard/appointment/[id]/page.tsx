@@ -32,11 +32,12 @@ import InputField from "@/components/InputField";
 import EditableCard from "@/components/EditableCard";
 import AudioRecorder from "@/components/AudioRecorder";
 import AudioPlayback from "@/components/AudioPlayback";
-import { getAppointment, getAppointmentExtended } from "@/actions/appointments";
+import { getAppointment, getAppointmentExtended, saveAppointmentData } from "@/actions/appointments";
 import { getAllSpecies } from "@/actions/species";
 import { getPet } from "@/actions/pet";
-import { Pet } from "@prisma/client";
+import { AppointmentDataProcessingStatus, AppointmentStatus, Pet } from "@prisma/client";
 import { calculateAge, formatTimeString } from "@/lib/functions";
+import { AppointmentData } from "@/types/AppointmentExtended";
 
 export default function AppointmentPage({
   params,
@@ -45,7 +46,7 @@ export default function AppointmentPage({
 }) {
   // const [appointmentId] = useState(() => crypto.randomUUID());
   const [appointmentId] = useState(() => params.id);
-  const [status, setStatus] = useState<"ongoing" | "completed">("ongoing");
+  const [status, setStatus] = useState<AppointmentStatus>(AppointmentStatus.UPCOMING);
   const [recAudioFile, setRecAudioFile] = useState<File | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isAppointmentComplete, setIsAppointmentComplete] = useState(false);
@@ -84,6 +85,8 @@ export default function AppointmentPage({
   const [pet, setPet] = useState<Pet | null>(null);
   const [petId, setPetId] = useState(0);
   const [species, setSpecies] = useState<any[]>([]);
+  const [appointmentData, setAppointmentData] = useState<AppointmentData | null>(null);
+  const [scribeHash, setScribeHash] = useState("");
 
   useEffect(() => {
     const loadAppointmentData = async () => {
@@ -91,6 +94,8 @@ export default function AppointmentPage({
         setIsFetching(true);
         const appointmentExtended = await getAppointmentExtended(Number(params.id))
         setSpecies(appointmentExtended?.species)
+        setScribeHash(appointmentExtended.scribeHash);
+        setPetId(appointmentExtended.petId)
         setAppointment(appointmentExtended)
         setClientName(appointmentExtended?.clientName)
         setPetName(appointmentExtended?.pet?.name ?? "")
@@ -98,7 +103,6 @@ export default function AppointmentPage({
         setPetAge(calculateAge(appointmentExtended?.pet?.dateOfBirth ?? new Date()))
         setIsFetching(false);
       } catch (err) {
-        // setError('Failed to load data');
         setIsFetching(false);
         console.error('Error loading user data or orders:', err);
       } finally {
@@ -106,11 +110,7 @@ export default function AppointmentPage({
       }
     }
     loadAppointmentData();
-
-    // Call the loadAppointmentData function
-    console.log('Component mounted');
     return () => {
-      console.log('Component unmounted');
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
@@ -125,9 +125,9 @@ export default function AppointmentPage({
       audioChunks.current.push(event.data);
     };
     mediaRecorder.current.onstop = () => {
-      const audioBlob = new Blob(audioChunks.current, { type: "audio/wav" });
-      const audioFile = new File([audioBlob], "audio.wav", {
-        type: "audio/wav",
+      const audioBlob = new Blob(audioChunks.current, { type: "audio/m4a" });
+      const audioFile = new File([audioBlob], "audio.m4a", {
+        type: "audio/m4a",
       });
       setRecAudioFile(audioFile);
       console.log(audioFile);
@@ -140,7 +140,8 @@ export default function AppointmentPage({
     }, 100);
   };
 
-  const pauseRecording = () => {
+  const pauseRecording = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     if (mediaRecorder.current && mediaRecorder.current.state === "recording") {
       mediaRecorder.current.pause();
       setIsPaused(true);
@@ -150,7 +151,8 @@ export default function AppointmentPage({
     }
   };
 
-  const resumeRecording = () => {
+  const resumeRecording = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     if (mediaRecorder.current && mediaRecorder.current.state === "paused") {
       mediaRecorder.current.resume();
       setIsPaused(false);
@@ -160,7 +162,8 @@ export default function AppointmentPage({
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     if (mediaRecorder.current) {
       mediaRecorder.current.stop();
       setIsRecording(false);
@@ -189,10 +192,24 @@ export default function AppointmentPage({
     setSoapNotes((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveAppointment = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSaveAppointment = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+
+    const formData = new FormData();
+    formData.append('id', String(params.id));
+    formData.append('clientName', clientName);
+    formData.append('petId', String(petId));
+    formData.append('petName', petName);
+    formData.append('petWeight', String(petWeight));
+    formData.append('isCompleted', String(isAppointmentComplete));
+
+    const audioBlob = audioFile ? audioFile : recAudioFile;
+    if (audioBlob) {
+      formData.append('audioFile', audioBlob);
+    }
+
     console.log("Saving appointment:", {
-      appointmentId,
+      appointmentId: params.id,
       status: isAppointmentComplete ? "completed" : "ongoing",
       soapNotes,
       clientName,
@@ -200,9 +217,27 @@ export default function AppointmentPage({
       petWeight,
       petAge,
       petSpecies,
-      audioFile: audioFile ? audioFile : recAudioFile,
+      audioFile: audioBlob,
     });
-    setStatus(isAppointmentComplete ? "completed" : "ongoing");
+
+    try {
+      const response = await fetch('/api/appointment', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log("Incoming Data: ", data);
+      if (!response.ok) {
+        console.error(data.error);
+      } else {
+        console.log('Appointment saved:', data);
+      }
+
+      setStatus(isAppointmentComplete ? AppointmentStatus.COMPLETED : AppointmentStatus.UPCOMING);
+    } catch (error) {
+      console.log("SAVING ERR: ", error);
+    }
   };
 
   const refreshSoapNotes = () => {
@@ -223,8 +258,6 @@ export default function AppointmentPage({
     clientName &&
     petName &&
     petWeight &&
-    petAge &&
-    petSpecies &&
     (recAudioFile || audioFile);
 
   const handleSpeciesChange = (selectedId: any) => {
@@ -235,22 +268,16 @@ export default function AppointmentPage({
 
   return (
     <>
-      {isFetching && <div className="w-full h-full flex justify-center items-center"><Loader2 className="text-primary h-36 w-36 animate-spin"/></div>}
+      {isFetching && <div className="w-full h-full flex justify-center items-center"><Loader2 className="text-primary h-36 w-36 animate-spin" /></div>}
       {!isFetching && <div className="mx-auto p-6 space-y-8">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Appointment: {appointment?.id}</h1>
             <div className="flex items-center space-x-2">
-              <Badge variant={status === "completed" ? "destrictive" : "secondary"}>
+              <Badge variant={appointment?.statusId === "COMPLETED" ? "destrictive" : "secondary"}>
                 {appointment?.statusId}
               </Badge>
             </div>
-          </div>
-          <div className="bg-muted p-4 rounded-md text-sm">
-            <p>Appointment Start: {formatTimeString(appointment?.startTime)}</p>
-            <p>Appointment End: {formatTimeString(appointment?.endTime)}</p>
-            <p>Type: {appointment?.appointmentType}</p>
-            <p>Booked via: {appointment?.platform}</p>
           </div>
         </div>
 
@@ -286,56 +313,39 @@ export default function AppointmentPage({
                 id="petWeight"
                 placeholder="Enter weight"
                 required
-                value={petWeight}
+                value={petWeight.toString()}
                 onChange={(value) => {
-                  if (/^\d*\.?\d*$/.test(value)) setPetWeight(value);
+                  if (/^\d*\.?\d*$/.test(value)) setPetWeight(Number(value));
                 }}
                 onBlur={() => validateField("petWeight")}
                 error={errors.petWeight}
               />
               <InputField
+                isDisabled={true}
                 label="Age"
                 id="petAge"
                 placeholder="Enter age"
-                required
-                value={petAge}
+                value={petAge.toString()}
                 onChange={(value) => {
-                  if (/^\d*$/.test(value)) setPetAge(value);
+                  if (/^\d*$/.test(value)) setPetAge(Number(value));
                 }}
                 onBlur={() => validateField("petAge")}
                 error={errors.petAge}
               />
               <div className="space-y-2">
-                <Label htmlFor="petSpecies" className="flex items-center">
-                  Species
-                  <span className="text-red-500 ml-1">*</span>
-                </Label>
-                <Select value={petSpecies} onValueChange={handleSpeciesChange}>
-                  <SelectTrigger
-                    className={
-                      errors.petSpecies ? "border-red-500 focus:ring-red-500" : ""
-                    }
-                  >
-                    <SelectValue placeholder="Select species" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {species.length !== 0 && species.map((kind) => {
-                      return <SelectItem key={kind.id} value={kind.name}>{kind.name}</SelectItem>
-                    })}
-                  </SelectContent>
-                </Select>
+                <InputField
+                  isDisabled={true}
+                  label="Pet Species"
+                  id="petSpecies"
+                  placeholder="Enter Pet Species"
+                  value={petSpecies}
+                  onChange={() => { }}
+                  onBlur={() => { }}
+                  error={errors.petSpecies}
+                />
               </div>
             </div>
           </div>
-
-          <Accordion type="single" collapsible>
-            <AccordionItem value="prev-notes">
-              <AccordionTrigger>Previous Appointment Notes</AccordionTrigger>
-              <AccordionContent>
-                <Textarea placeholder="No previous notes available" />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
 
           <Card>
             <CardHeader>
