@@ -19,7 +19,9 @@ model User {
   password  String
   name      String?
   createdAt DateTime @default(now())
+  deleted Boolean @default(false)
   sessions   Session[]
+  appointments Appointment[]
 }
 
 model Session {
@@ -29,4 +31,63 @@ model Session {
   sessionToken String  @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Appointment {
+  id Int @id @default(autoincrement())
+  scribeHash String @default(uuid()) @db.VarChar(255) @unique
+  clientName String @db.VarChar(400)
+  clientEmail String @db.VarChar(200)
+  doctorId Int 
+  doctor User @relation(fields:[doctorId], references: [id])
+  petId Int
+  pet Pet @relation(fields: [petId], references: [id])
+  deleted Boolean @default(false)
+  platform BookingPlatform @default(ONLINE)
+  appointmentType String @db.VarChar(200)
+  startTime DateTime
+  endTime DateTime
+  statusId AppointmentStatus @default(UPCOMING)
+  dataProcessingStatus AppointmentDataProcessingStatus @default(COMPLETED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Species {
+  id Int @id @default(autoincrement())
+  name String
+  pets Pet[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Pet {
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(200)
+  dateOfBirth DateTime?
+  weight Float
+  speciesId Int
+  species Species @relation(fields:[speciesId], references: [id])
+  deleted Boolean @default(false)
+  appointments Appointment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum AppointmentStatus {
+  COMPLETED
+  INPROGRESS
+  UPCOMING
+}
+
+enum AppointmentDataProcessingStatus {
+  COMPLETED
+  PENDING
+  QUEUED
+  ERROR
+}
+
+enum BookingPlatform {
+  ONLINE
+  DIRECT
 }
