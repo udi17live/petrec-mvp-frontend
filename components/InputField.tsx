@@ -11,6 +11,7 @@ export default function InputField({
   onChange,
   onBlur,
   error,
+  isDisabled = false
 }: {
   label: string;
   id: string;
@@ -21,6 +22,7 @@ export default function InputField({
   onChange: (value: string) => void;
   onBlur: () => void;
   error: boolean;
+  isDisabled?: boolean;
 }) {
   return (
     <div className="space-y-2">
@@ -37,6 +39,7 @@ export default function InputField({
         onBlur={onBlur}
         required={required}
         className={error ? "border-red-500 focus:ring-red-500" : ""}
+        disabled={isDisabled}
       />
     </div>
   );

@@ -1,7 +1,10 @@
 "use server"
+import { AppointmentData } from "@/types/AppointmentExtended";
 import { getAppointmentsForDashboardTable, getAppointmentById } from "../lib/helpers/AppointmentHelper"
 import { getPet } from "./pet";
 import { getAllSpecies } from "./species";
+import { db } from "@/lib/db";
+import { uploadFile } from "./fileUpload";
 
 export async function getAppointments(doctorId: number) {
     try{
@@ -34,8 +37,45 @@ export async function getAppointmentExtended(appointmentId: number) {
             pet: pet,
             species: species
         }
-        console.log("A: ", a)
         return a;
+    }catch(error){
+        console.log("AE: ", error)
+        throw new Error("Something went wrong.");
+    }
+}
+
+export async function saveAppointmentData(appointmentData: AppointmentData | null){
+    try{
+        if(!appointmentData) {
+            throw new Error("Appointment Data is missing")
+        }
+
+        if(!appointmentData.audioFile) {
+            throw new Error("Audio file is missing")
+        }
+        const existingAppointment = await db.appointment.findFirst({where: {id: appointmentData.id}});
+
+        if(!existingAppointment){
+            throw new Error("Failed to fetch existing appointment");
+        }
+
+        const audioFileUpload = await uploadFile(existingAppointment.scribeHash, appointmentData.audioFile)
+
+        const appointment = await db.appointment.update({
+            where: {id: appointmentData.id},
+            data: {
+                clientName: appointmentData.clientName,
+            }
+        })
+
+        const petData = appointmentData.pet;
+        const pet = await db.pet.update({
+            where: {id: appointmentData.id},
+            data: {
+                name: petData.name,
+                weight: petData.weight
+            }
+        })
     }catch(error){
         console.log("AE: ", error)
         throw new Error("Something went wrong.");
