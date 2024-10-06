@@ -38,6 +38,7 @@ import { getPet } from "@/actions/pet";
 import { AppointmentDataProcessingStatus, AppointmentStatus, Pet } from "@prisma/client";
 import { calculateAge, formatTimeString } from "@/lib/functions";
 import { AppointmentData } from "@/types/AppointmentExtended";
+import SoapNotes from "@/components/SoapNotes";
 
 export default function AppointmentPage({
   params,
@@ -260,16 +261,35 @@ export default function AppointmentPage({
     petWeight &&
     (recAudioFile || audioFile);
 
-  const handleSpeciesChange = (selectedId: any) => {
-    const selectedSpeciesArray = species.filter(kind => kind.id === Number(selectedId));
-    const selectedSpecies = selectedSpeciesArray?.name || undefined;
-    setPetSpecies(selectedSpecies)
-  };
+    const initialSoapNotes = {
+      chiefComplaint: {
+        title: "Chief Complaint",
+        value: "The dog was vomiting and had diarrhea on Friday night and early Saturday morning."
+      },
+      vitalSigns: {
+        title: "Vital Signs",
+        value: {
+          "Temperature": "103.5F",
+          "Heart Rate": "120 bpm"
+        }
+      },
+      treatmentPlan: {
+        title: "Treatment Plan",
+        value: [
+          "Monitor the dog for any new growths or changes in existing bumps.",
+          "Observe paws for increased redness or sores."
+        ]
+      }
+    }
+  
+    const refreshSoapNotesNew = () => {
+      console.log('Refreshing SOAP notes')
+    }
 
   return (
     <>
       {isFetching && <div className="w-full h-full flex justify-center items-center"><Loader2 className="text-primary h-36 w-36 animate-spin" /></div>}
-      {!isFetching && <div className="mx-auto p-6 space-y-8">
+      {!isFetching && <div className="mx-auto p-6 space-y-8 max-w-4xl min-w-4xl">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Appointment: {appointment?.id}</h1>
@@ -448,7 +468,7 @@ export default function AppointmentPage({
         </form>
 
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
+          {/* <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">SOAP Notes</h2>
             <Button onClick={refreshSoapNotes} variant="outline">
               <RefreshCcw className="mr-2 h-4 w-4" />
@@ -466,7 +486,8 @@ export default function AppointmentPage({
                 handleSoapChange(key as keyof typeof soapNotes, newValue)
               }
             />
-          ))}
+          ))} */}
+          <SoapNotes initialNotes={initialSoapNotes} onRefresh={refreshSoapNotes} />
         </div>
       </div>
       }
