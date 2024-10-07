@@ -87,13 +87,14 @@ export async function POST(request: Request) {
         }
 
         // Handle the file upload
-        await uploadFile(existingAppointment.scribeHash, audioFile);
+        const fileUrl = await uploadFile(existingAppointment.scribeHash, audioFile);
 
         // Update appointment
         const appointment = await db.appointment.update({
             where: { id: Number(appointmentId) },
             data: {
                 clientName: clientName,
+                fileUrl: fileUrl
             }
         });
 

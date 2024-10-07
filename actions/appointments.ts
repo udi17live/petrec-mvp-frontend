@@ -1,6 +1,7 @@
 "use server"
 import { AppointmentData } from "@/types/AppointmentExtended";
 import { getAppointmentsForDashboardTable, getAppointmentById } from "../lib/helpers/AppointmentHelper"
+import { getSoapNotesforDisplay, getSubjectiveNoteForSoapNote } from "./soapnotes"
 import { getPet } from "./pet";
 import { getAllSpecies } from "./species";
 import { db } from "@/lib/db";
@@ -32,12 +33,14 @@ export async function getAppointmentExtended(appointmentId: number) {
 
         const pet = await getPet(appointment?.petId);
 
-        const a= {
+        const soapNote = await getSoapNotesforDisplay(appointmentId);
+
+        return {
             ...appointment,
             pet: pet,
-            species: species
+            species: species,
+            soapNote: soapNote
         }
-        return a;
     }catch(error){
         console.log("AE: ", error)
         throw new Error("Something went wrong.");

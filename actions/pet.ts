@@ -2,12 +2,10 @@
 import { db } from "@/lib/db";
 
 export async function getPet(petId: number) {
-    console.log("PETID IN AC: ", petId)
     try{
         const pet = await db.pet.findFirst({
             where: { id: petId, deleted: false}
         });
-        console.log("PET: ", pet);
         
         return pet;
     }catch(error){

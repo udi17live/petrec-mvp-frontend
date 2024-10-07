@@ -47,6 +47,7 @@ model Appointment {
   appointmentType String @db.VarChar(200)
   startTime DateTime
   endTime DateTime
+  fileUrl String? @db.VarChar(700)
   statusId AppointmentStatus @default(UPCOMING)
   dataProcessingStatus AppointmentDataProcessingStatus @default(COMPLETED)
   createdAt DateTime @default(now())
