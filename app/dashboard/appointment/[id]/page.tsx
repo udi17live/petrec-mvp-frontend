@@ -24,6 +24,7 @@ import {
   CardContent,
   CardHeader,
   CardDescription,
+  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,7 +38,7 @@ import { getAllSpecies } from "@/actions/species";
 import { getPet } from "@/actions/pet";
 import { AppointmentDataProcessingStatus, AppointmentStatus, Pet } from "@prisma/client";
 import { calculateAge, formatTimeString } from "@/lib/functions";
-import { AppointmentData } from "@/types/AppointmentExtended";
+import { AppointmentData, SoapNote } from "@/types/AppointmentExtended";
 import SoapNotes from "@/components/SoapNotes";
 
 export default function AppointmentPage({
@@ -88,6 +89,11 @@ export default function AppointmentPage({
   const [species, setSpecies] = useState<any[]>([]);
   const [appointmentData, setAppointmentData] = useState<AppointmentData | null>(null);
   const [scribeHash, setScribeHash] = useState("");
+  const [fileUrl, setFileUrl] = useState("");
+  const [soapNote, setSoapNote] = useState<SoapNote>();
+  const [isSaving, setIsSaving] = useState(false);
+  const [clientSummary, setClientSummary] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     const loadAppointmentData = async () => {
@@ -103,6 +109,9 @@ export default function AppointmentPage({
         setPetWeight(appointmentExtended?.pet?.weight ?? 0)
         setPetAge(calculateAge(appointmentExtended?.pet?.dateOfBirth ?? new Date()))
         setIsFetching(false);
+        setFileUrl(appointmentExtended.fileUrl ?? "")
+        setSoapNote(appointmentExtended?.soapNote)
+        setClientSummary(appointmentExtended?.soapNote?.summary)
       } catch (err) {
         setIsFetching(false);
         console.error('Error loading user data or orders:', err);
@@ -195,7 +204,7 @@ export default function AppointmentPage({
 
   const handleSaveAppointment = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-
+    setIsSaving(true);
     const formData = new FormData();
     formData.append('id', String(params.id));
     formData.append('clientName', clientName);
@@ -228,7 +237,6 @@ export default function AppointmentPage({
       });
 
       const data = await response.json();
-      console.log("Incoming Data: ", data);
       if (!response.ok) {
         console.error(data.error);
       } else {
@@ -236,19 +244,11 @@ export default function AppointmentPage({
       }
 
       setStatus(isAppointmentComplete ? AppointmentStatus.COMPLETED : AppointmentStatus.UPCOMING);
+      setIsSaving(false);
     } catch (error) {
       console.log("SAVING ERR: ", error);
+      setIsSaving(false);
     }
-  };
-
-  const refreshSoapNotes = () => {
-    console.log("Refreshing SOAP notes");
-    setSoapNotes({
-      subjective: "",
-      objective: "",
-      assessment: "",
-      plan: "",
-    });
   };
 
   const validateField = (field: keyof typeof errors) => {
@@ -261,30 +261,13 @@ export default function AppointmentPage({
     petWeight &&
     (recAudioFile || audioFile);
 
-    const initialSoapNotes = {
-      chiefComplaint: {
-        title: "Chief Complaint",
-        value: "The dog was vomiting and had diarrhea on Friday night and early Saturday morning."
-      },
-      vitalSigns: {
-        title: "Vital Signs",
-        value: {
-          "Temperature": "103.5F",
-          "Heart Rate": "120 bpm"
-        }
-      },
-      treatmentPlan: {
-        title: "Treatment Plan",
-        value: [
-          "Monitor the dog for any new growths or changes in existing bumps.",
-          "Observe paws for increased redness or sores."
-        ]
-      }
-    }
-  
-    const refreshSoapNotesNew = () => {
-      console.log('Refreshing SOAP notes')
-    }
+  const handleEdit = () => {
+    setIsEditing(true)
+  }
+
+  const handleSave = () => {
+    setIsEditing(false)
+  }
 
   return (
     <>
@@ -398,7 +381,7 @@ export default function AppointmentPage({
                   />
                   {recAudioFile && (
                     <div className="mt-4 flex items-center justify-evenly">
-                      <AudioPlayback audioFile={recAudioFile} />
+                      <AudioPlayback audioFile={recAudioFile} fileUrl={fileUrl} />
                       <div className="flex justify-center">
                         <Button variant="destructive" onClick={deleteRecording}>
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -428,7 +411,7 @@ export default function AppointmentPage({
                     </p>
                     {audioFile && (
                       <div className="mt-4 flex items-center justify-evenly">
-                        <AudioPlayback audioFile={audioFile} />
+                        <AudioPlayback audioFile={audioFile} fileUrl={fileUrl} />
                         <div className="flex justify-center">
                           <Button variant="destructive" onClick={deleteInputFile}>
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -460,34 +443,80 @@ export default function AppointmentPage({
           <Button
             className="w-full"
             onClick={handleSaveAppointment}
-            disabled={!isFormValid}
+            disabled={!isFormValid || isSaving}
           >
-            <Save className="mr-2 h-4 w-4" />
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save Appointment
           </Button>
         </form>
 
         <div className="space-y-6">
-          {/* <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">SOAP Notes</h2>
-            <Button onClick={refreshSoapNotes} variant="outline">
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Refresh Notes
-            </Button>
-          </div>
-          {Object.entries(soapNotes).map(([key, value]) => (
-            <EditableCard
-              key={key}
-              title={key.charAt(0).toUpperCase() + key.slice(1)}
-              content={value}
-              onEdit={() => toggleEdit(key as keyof typeof soapNotes)}
-              isEditing={editingSoap[key as keyof typeof editingSoap]}
-              onSave={(newValue) =>
-                handleSoapChange(key as keyof typeof soapNotes, newValue)
-              }
-            />
-          ))} */}
-          <SoapNotes initialNotes={initialSoapNotes} onRefresh={refreshSoapNotes} />
+
+
+          {soapNote && <>
+            <Label className="text-3xl font-bold">Soap Notes</Label>
+            {/* Client Summary */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-2xl font-bold">Client Summary</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={isEditing ? handleSave : handleEdit}
+                >
+                  {isEditing ? 'Save' : 'Edit'}
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {isEditing ? (
+                  <Textarea
+                    value={clientSummary}
+                    onChange={(e) => setClientSummary(e.target.value)}
+                    placeholder="Enter client summary here"
+                    className="min-h-[100px]"
+                  />
+                ) : (
+                  <p className="text-gray-600">
+                    {clientSummary || 'No client summary yet.'}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* SOAP notes section */}
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              </CardHeader>
+              <CardContent>
+                {soapNotes && <SoapNotes title="Subjective" initialNotes={soapNote?.subjectiveNote} />}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              </CardHeader>
+              <CardContent>
+                {soapNotes && <SoapNotes title="Objective" initialNotes={soapNote?.objectiveNote} />}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              </CardHeader>
+              <CardContent>
+                {soapNotes && <SoapNotes title="Assesment" initialNotes={soapNote?.assesmentNote} />}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              </CardHeader>
+              <CardContent>
+                {soapNotes && <SoapNotes title="Plan" initialNotes={soapNote?.planNote} />}
+              </CardContent>
+            </Card>
+          </>}
         </div>
       </div>
       }
